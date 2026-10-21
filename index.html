@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>抜きの歩行</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 配置：一言のまとめ → 真横の4コマ（二つの歩き方を上下に） → くらべ表 → 一歩の曲線 → 仕組み3段 → 本人の言葉との対応 → 確かめ方 → 不確かな点。歩行の説くらべと同じ墨と藍、選んだ歩き方は橙 */
+:root{
+  --bg:#f1f3f2; --surface:#ffffff; --ink:#1b232c; --muted:#5a6570; --line:#d3d9dd; --grid:#e6eaec; --accent:#b2601c;
+  --c1:#6f7d8e; --c3:#a2541c; --brake:#b23a48; --accel:#2d7a63; --soft:#fbeee2;
+  --t-s:#22466c; --t-w:#7a3e8c; --t-r:#9a3f5a; --t-k:#5a6570;
+  --f-disp:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161b; --surface:#182027; --ink:#e3e8ec; --muted:#9aa5af; --line:#2b353e; --grid:#222b33; --accent:#e39352;
+  --c1:#a3afbd; --c3:#e39a5e; --brake:#e98a96; --accel:#62c4a5; --soft:#2c241c;
+  --t-s:#86aedb; --t-w:#c79ad6; --t-r:#e08aa3; --t-k:#9aa5af; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161b; --surface:#182027; --ink:#e3e8ec; --muted:#9aa5af; --line:#2b353e; --grid:#222b33; --accent:#e39352;
+  --c1:#a3afbd; --c3:#e39a5e; --brake:#e98a96; --accel:#62c4a5; --soft:#2c241c;
+  --t-s:#86aedb; --t-w:#c79ad6; --t-r:#e08aa3; --t-k:#9aa5af; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
+.wrap{max-width:900px;margin:0 auto;display:grid;gap:34px}
+h1,h2{font-family:var(--f-disp);font-weight:700;text-wrap:balance;margin:0;letter-spacing:.02em;word-break:keep-all}
+h1{font-size:clamp(26px,5vw,36px);line-height:1.3}
+h2{font-size:20px;line-height:1.4}
+h3{margin:0;font-size:14.5px;font-weight:700}
+p{margin:0}
+header,section{display:grid;gap:12px}
+.meta{font-size:12.5px;color:var(--muted);letter-spacing:.04em}
+.frame{display:inline-block;border:1px solid var(--line);border-radius:3px;padding:0 8px;margin-right:6px;font-size:12px;color:var(--muted)}
+.lead{max-width:62ch;font-size:16px}
+.thesis{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:grid;gap:10px}
+.thesis .row{display:grid;grid-template-columns:7.5em 1fr;gap:4px 12px;align-items:baseline}
+@media (max-width:520px){.thesis .row{grid-template-columns:1fr}}
+.thesis .lab{font-family:var(--f-disp);font-weight:700;font-size:15px}
+.thesis .lab.n{color:var(--c1)} .thesis .lab.t{color:var(--c3)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;display:grid;gap:8px;min-width:0}
+canvas{display:block;width:100%;max-width:100%}
+.strip{aspect-ratio:16/6}
+@media (max-width:520px){.strip{aspect-ratio:16/8}}
+.plot{aspect-ratio:16/7}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.05em;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.k{font-weight:700;white-space:nowrap}
+td .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td .note{display:block;font-size:12px;color:var(--muted)}
+th.n,td.n{color:var(--c1)} th.t{color:var(--c3)}
+tr.hi td{background:var(--soft)}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:0 6px;border:1.5px solid currentColor;border-radius:3px;line-height:1.6;margin-right:4px;white-space:nowrap;vertical-align:1px}
+.tag.s{color:var(--t-s)} .tag.w{color:var(--t-w)} .tag.r{color:var(--t-r)} .tag.k{color:var(--t-k)}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:st}
+@media (max-width:760px){.steps{grid-template-columns:1fr}}
+.steps .card h3::before{counter-increment:st;content:counter(st);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--c3);color:var(--surface);font-size:12px;margin-right:8px;vertical-align:1px}
+ul.plain{margin:0;padding-left:1.1em;display:grid;gap:6px}
+.note-b{border-left:3px solid var(--accent);padding:4px 0 4px 12px;max-width:66ch}
+a{color:var(--t-s);word-break:break-all}
+footer{font-size:12px;color:var(--muted)}
+</style>
+
+</head><body>
+<div class="wrap">
+<header>
+  <p class="meta"><span class="frame">西洋的力学</span><span class="frame">点の重さの模型</span>2026-10-21 ・ 歩行の説くらべ（田代さん版）の「膝を抜いて進む」の節のまとめ</p>
+  <h1>膝を抜いて進む歩行と、通常歩行の違い</h1>
+  <p class="lead">同じ歩幅（60 cm）、同じ速さ（1.2 m/s）で歩き続ける二つの歩き方を、同じ計算でくらべました。数値はすべて模型の計算で、実測ではありません。</p>
+  <div class="thesis">
+    <div class="row"><span class="lab n">通常歩行</span><p>脚を伸ばしたまま足の上を<b>乗り越え</b>、次の足が着く直前に後ろ足で<b>蹴って</b>速さを足す。</p></div>
+    <div class="row"><span class="lab t">抜きの歩行</span><p>足が着いた直後に支える脚の<b>膝を抜いて</b>ブレーキを消し、体が足より前に出てから<b>膝を伸ばして</b>速さを足す。蹴らない。</p></div>
+    <p style="font-size:14px;color:var(--muted)">どちらも、同じ速さで歩き続けるには、どこかで脚が仕事をして速さを足す必要があります。違いは、<b>いつ、どの関節で</b>足すかです。</p>
+  </div>
+</header>
+
+<section aria-labelledby="h-fig">
+  <h2 id="h-fig">一歩を4コマで</h2>
+  <div class="card">
+    <h3 style="color:var(--c1)">通常歩行（乗り越え）</h3>
+    <canvas id="cvN" class="strip" aria-label="通常歩行の4コマ"></canvas>
+    <h3 style="color:var(--c3);margin-top:6px">抜きの歩行</h3>
+    <canvas id="cvT" class="strip" aria-label="抜きの歩行の4コマ"></canvas>
+    <p class="meta">左から：足が着く ／ 着いた直後 ／ 体が足の真上 ／ 次の足が着く手前。濃い脚が体重を支える脚。矢印は前後の力（緑が前向き、赤が後ろ向き）。矢印が無いときは力がほぼ0。</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-tbl">
+  <h2 id="h-tbl">くらべ表</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>項目</th><th class="n">通常歩行</th><th class="t">抜きの歩行</th></tr></thead>
+    <tbody id="tb"></tbody>
+  </table></div>
+  <p class="meta"><span class="tag k">計算</span>色の付いた行が、大きく違うところです。仕事は体重 1 kg あたり、一歩あたり。</p>
+</section>
+
+<section aria-labelledby="h-curve">
+  <h2 id="h-curve">一歩の中の動き（二歩分）</h2>
+  <div class="card"><h3>前に進む速さ（m/s）</h3><canvas id="pV" class="plot" aria-label="前に進む速さ"></canvas></div>
+  <div class="card"><h3>上下の加速度（腰に付けたスマホの読み、g）</h3><canvas id="pA" class="plot" aria-label="上下の加速度"></canvas></div>
+  <div class="card"><h3>支える脚の膝（度）</h3><canvas id="pK" class="plot" aria-label="膝の角度"></canvas></div>
+  <div class="legend"><span><i style="background:var(--c1)"></i>通常歩行</span><span><i style="background:var(--c3)"></i>抜きの歩行</span><span>縦の線は足が着く瞬間</span></div>
+</section>
+
+<section aria-labelledby="h-how">
+  <h2 id="h-how">蹴らずに進める仕組み</h2>
+  <div class="steps">
+    <div class="card"><h3>着いた直後に抜く</h3><p style="font-size:14px">足が着いた直後は、体がまだ足より後ろにあります。このとき脚の力は後ろ向き（ブレーキ）です。ここで膝を抜くと、脚の力がほぼ0になり、ブレーキも0になります。体は少し落ちます。</p></div>
+    <div class="card"><h3>低く運ぶ</h3><p style="font-size:14px">膝を曲げたまま、体は足の真上を低く通り過ぎます。腰の高さは通常歩行より約5 cm低く、上下の揺れは小さくなります。</p></div>
+    <div class="card"><h3>前で伸ばす</h3><p style="font-size:14px">体が足より前に出てから膝を伸ばします。このときの脚の力は前向き（アクセル）です。これが蹴りの代わりになり、速さが足されます。</p></div>
+  </div>
+  <div class="card">
+    <h3><span class="tag k">計算</span>力学の決まり（一つ）</h3>
+    <p style="font-size:14px">脚の力が足首を通るなら、足首まわりの回る勢い（角運動量）は重力だけで変わります。だから膝は、体を直接前へ押すことはできません。膝にできるのは、<b>脚の力をいつ強く、いつ弱くするか</b>（時間の配分）と、<b>腰の高さ</b>を変えることです。抜きの歩行は、力を「体が足より後ろのとき弱く、前のとき強く」配分しています。</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-words">
+  <h2 id="h-words">田代さんの言葉と、模型での読み</h2>
+  <div class="tbl"><table>
+    <thead><tr><th><span class="tag w">本人</span>言葉</th><th><span class="tag k">計算</span><span class="tag r">推論</span>模型での読み</th></tr></thead>
+    <tbody>
+      <tr><td>足を乗り越えるのではなく、軸足の膝をたたむ（抜く）ことで体が前に進む。</td><td>膝をたたむと、その間ブレーキが消える。前へ速さを足すのは、そのあと膝を伸ばす動き。「たたむ」と「伸ばす」が対になって前に進む。</td></tr>
+      <tr><td>重心を「運ぶ」のではなく「移す」。接地を切り替えるとき勝手に重心が移動する作用を使う。</td><td>脚の力をゆるめると、体は支えを失った分だけ自然に落ちて進む。筋で押して運ぶ時間が短くなる。</td></tr>
+      <tr><td>意識的に蹴る動作はしないが、観測上は蹴り足としての圧力は発生する。</td><td>合っている。前で膝を伸ばす力は、床を後ろへ押す向きの力になる。体感の「蹴らない」と、床が受ける前向きの力は両立する。</td></tr>
+      <tr><td>一般のロッカー歩行は加速と減速を繰り返す。膝の抜きを使うと、減速局面で減速しない。</td><td>一部合っている。着いた直後の一瞬はブレーキが0になる。ただ一歩全体のブレーキの量は、通常歩行とほぼ同じ（0.38 と 0.41 m/s）。違いは、速さを足す場所が蹴りから膝へ移ること。</td></tr>
+      <tr><td>前足の接地の瞬間に後ろを抜く感覚。</td><td>模型の「蹴り0」と同じ。後ろ足は押さずに離れ、次の一歩は前足の膝の抜きから始まる。</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="h-test">
+  <h2 id="h-test">どうすれば確かめられるか（一つ）</h2>
+  <p class="note-b">スマホを仙骨にベルトで固定し、歩行の説くらべの「スマホで記録する」で上下の加速度を記録します。抜きの歩行なら、足が着いた直後に上下の加速度が 1 g より大きく下がり（模型では 0 g 近く）、次の足が着く手前で 1 g を大きく越えるはずです（模型では約 1.5 g）。通常歩行には、この谷と山がありません。足元を真横から同時に撮ると、着いた瞬間と合わせられます。</p>
+</section>
+
+<section aria-labelledby="h-unc">
+  <h2 id="h-unc">不確かな点</h2>
+  <ul class="plain">
+    <li>模型は点の重さに、伸び縮みする脚を付けただけです。足裏の転がり、上体、腕、骨盤の回り、両脚で支える時間は入っていません。ここでの「通常歩行」も、最も単純な歩行の模型で、実際の通常歩行そのものではありません。</li>
+    <li>抜きの歩行で膝は 37〜50° 曲がっています。かなり深い曲がりです。田代さんの実際の歩きの膝の深さは、まだ測っていません。</li>
+    <li>抜きの歩行は、通常歩行より多くの仕事を使います（模型では約4倍）。楽な歩き方だという意味ではありません。速さの揺れも少し大きくなります。</li>
+    <li>「着いたときに伸ばし、乗り越えた後に抜く」順では、模型の蹴りは減りませんでした。抜く時点が大事だと考えられます。</li>
+  </ul>
+</section>
+
+<section aria-labelledby="h-basis">
+  <h2 id="h-basis">模型の決まりと出典</h2>
+  <ul class="plain" style="font-size:14px">
+    <li><span class="tag k">計算</span>点の重さ（重心＝股関節の位置）に、太もも・すね各 0.45 m の脚。支点は足首。脚の力は足首から重心の向き。膝のねらいの角度に向けて脚の長さを変え、床は引けない（力は0未満にならない）。</li>
+    <li><span class="tag k">計算</span>蹴りの量は「一歩ごとに速さが変わらない」ように自動で決めた。抜きの歩行では、その量が0になった。</li>
+    <li><span class="tag s">検索</span>一歩の切り替え（後ろ脚の蹴り、前脚の接地で速さを失う）は、Kuo（2002）の最も単純な歩行の模型の考え方。<a href="https://www.biorxiv.org/content/10.1101/2024.07.16.603707.full.pdf">bioRxiv 2024.07.16.603707（模型の説明）</a></li>
+  </ul>
+</section>
+
+<footer>作成：北野（Claude と作成）。歩行の説くらべ（田代さん版）の模型で計算。</footer>
+</div>
+
+<script>
+const DATA = {"vault":{"P":0.46,"T":0.64,"cad":94,"wpos":0,"push":0.11,"col":0.1,"brake":0.41,"accel":0.41,"vmin":0.81,"vmax":1.21,"zmin":0.92,"zmax":0.97,"azmin":0.72,"azmax":0.93,"kmin":5,"kmax":6,"ser":[[0,-0.295,0.924,1.2,0.72,-0.25,5.7,0],[0.016,-0.283,0.928,1.17,0.74,-0.244,5.7,0],[0.031,-0.272,0.932,1.15,0.75,-0.238,5.7,0],[0.047,-0.26,0.935,1.13,0.77,-0.232,5.7,0],[0.063,-0.249,0.939,1.11,0.78,-0.225,5.7,0],[0.078,-0.238,0.942,1.08,0.79,-0.218,5.7,0],[0.094,-0.227,0.945,1.06,0.81,-0.211,5.6,0],[0.11,-0.217,0.947,1.04,0.82,-0.203,5.6,0],[0.126,-0.207,0.95,1.02,0.83,-0.195,5.6,0],[0.141,-0.196,0.952,1,0.84,-0.187,5.6,0],[0.157,-0.187,0.954,0.99,0.85,-0.179,5.5,0],[0.173,-0.177,0.956,0.97,0.85,-0.171,5.5,0],[0.188,-0.167,0.958,0.95,0.86,-0.163,5.5,0],[0.204,-0.158,0.96,0.94,0.87,-0.155,5.4,0],[0.22,-0.148,0.962,0.92,0.87,-0.146,5.4,0],[0.235,-0.139,0.963,0.91,0.88,-0.138,5.3,0],[0.251,-0.13,0.965,0.89,0.89,-0.13,5.3,0],[0.267,-0.121,0.966,0.88,0.89,-0.121,5.3,0],[0.283,-0.113,0.967,0.87,0.9,-0.113,5.2,0],[0.298,-0.104,0.968,0.86,0.9,-0.105,5.2,0],[0.314,-0.095,0.969,0.85,0.91,-0.097,5.2,0],[0.33,-0.087,0.97,0.84,0.91,-0.088,5.2,0],[0.345,-0.079,0.971,0.83,0.91,-0.08,5.1,0],[0.361,-0.07,0.971,0.83,0.92,-0.072,5.1,0],[0.377,-0.062,0.972,0.82,0.92,-0.064,5.1,0],[0.392,-0.054,0.972,0.81,0.92,-0.055,5.1,0],[0.408,-0.046,0.973,0.81,0.92,-0.047,5.1,0],[0.424,-0.038,0.973,0.8,0.92,-0.039,5.1,0],[0.44,-0.03,0.974,0.8,0.93,-0.031,5.1,0],[0.455,-0.022,0.974,0.8,0.93,-0.022,5,0],[0.471,-0.014,0.974,0.8,0.93,-0.014,5,0],[0.487,-0.006,0.974,0.8,0.93,-0.006,5,0],[0.502,0.002,0.974,0.79,0.93,0.002,5,0],[0.518,0.01,0.974,0.8,0.93,0.01,5,0],[0.534,0.018,0.974,0.8,0.93,0.019,5,0],[0.549,0.026,0.974,0.8,0.93,0.027,5,0],[0.565,0.034,0.973,0.8,0.93,0.035,5,0],[0.581,0.042,0.973,0.81,0.92,0.043,5,0],[0.597,0.05,0.973,0.81,0.92,0.052,5,0],[0.612,0.058,0.972,0.82,0.92,0.06,5,0],[0.628,0.067,0.972,0.82,0.92,0.068,5,0],[0.644,0.075,0.971,0.83,0.91,0.076,5,0],[0.659,0.083,0.97,0.84,0.91,0.085,5,0],[0.675,0.092,0.969,0.85,0.91,0.093,5,0],[0.691,0.1,0.969,0.86,0.9,0.101,5,0],[0.706,0.109,0.968,0.87,0.9,0.11,5,0],[0.722,0.117,0.966,0.88,0.89,0.118,5,0],[0.738,0.126,0.965,0.89,0.89,0.126,5,0],[0.754,0.135,0.964,0.9,0.88,0.134,5,0],[0.769,0.144,0.963,0.92,0.88,0.143,5,0],[0.785,0.153,0.961,0.93,0.87,0.151,5,0],[0.801,0.163,0.959,0.95,0.86,0.159,5,0],[0.816,0.172,0.957,0.96,0.86,0.167,5,0],[0.832,0.182,0.956,0.98,0.85,0.175,5,0],[0.848,0.192,0.953,1,0.84,0.183,5,0],[0.863,0.202,0.951,1.01,0.83,0.191,5,0],[0.879,0.212,0.949,1.03,0.82,0.199,5,0],[0.895,0.223,0.946,1.05,0.81,0.207,5,0],[0.911,0.233,0.943,1.07,0.8,0.214,5,0],[0.926,0.244,0.94,1.1,0.79,0.221,5,0],[0.942,0.255,0.937,1.12,0.77,0.228,5,0],[0.958,0.266,0.934,1.14,0.76,0.235,5,0],[0.973,0.278,0.93,1.16,0.74,0.242,5,0],[0.989,0.29,0.926,1.19,0.73,0.248,5,0],[1.009,-0.295,0.924,1.2,0.72,-0.25,5.5,1],[1.025,-0.283,0.928,1.18,0.73,-0.244,5.5,1],[1.041,-0.272,0.932,1.16,0.75,-0.238,5.5,1],[1.057,-0.26,0.936,1.13,0.76,-0.231,5.5,1],[1.072,-0.249,0.939,1.11,0.78,-0.224,5.5,1],[1.088,-0.238,0.942,1.09,0.79,-0.217,5.4,1],[1.104,-0.227,0.945,1.07,0.8,-0.21,5.4,1],[1.119,-0.216,0.948,1.05,0.81,-0.202,5.4,1],[1.135,-0.206,0.95,1.03,0.83,-0.194,5.4,1],[1.151,-0.196,0.952,1.01,0.83,-0.186,5.4,1],[1.166,-0.186,0.955,0.99,0.84,-0.178,5.4,1],[1.182,-0.176,0.957,0.98,0.85,-0.17,5.3,1],[1.198,-0.166,0.959,0.96,0.86,-0.162,5.3,1],[1.214,-0.157,0.96,0.94,0.87,-0.154,5.3,1],[1.229,-0.147,0.962,0.93,0.87,-0.145,5.3,1],[1.245,-0.138,0.963,0.92,0.88,-0.137,5.2,1],[1.261,-0.129,0.965,0.9,0.89,-0.128,5.2,1],[1.276,-0.12,0.966,0.89,0.89,-0.12,5.2,1],[1.292,-0.111,0.967,0.88,0.9,-0.112,5.2,1],[1.308,-0.103,0.968,0.87,0.9,-0.103,5.1,1],[1.323,-0.094,0.969,0.86,0.9,-0.095,5.1,1],[1.339,-0.085,0.97,0.85,0.91,-0.087,5.1,1],[1.355,-0.077,0.971,0.84,0.91,-0.078,5.1,1],[1.37,-0.069,0.971,0.83,0.91,-0.07,5.1,1],[1.386,-0.06,0.972,0.83,0.92,-0.062,5.1,1],[1.402,-0.052,0.973,0.82,0.92,-0.053,5.1,1],[1.418,-0.044,0.973,0.82,0.92,-0.045,5.1,1],[1.433,-0.036,0.973,0.81,0.92,-0.037,5,1],[1.449,-0.028,0.974,0.81,0.92,-0.028,5,1],[1.465,-0.019,0.974,0.81,0.93,-0.02,5,1],[1.48,-0.011,0.974,0.81,0.93,-0.012,5,1],[1.496,-0.003,0.974,0.81,0.93,-0.003,5,1],[1.512,0.005,0.974,0.81,0.93,0.005,5,1],[1.527,0.013,0.974,0.81,0.93,0.013,5,1],[1.543,0.021,0.974,0.81,0.93,0.021,5,1],[1.559,0.029,0.974,0.81,0.92,0.03,5,1],[1.575,0.037,0.973,0.81,0.92,0.038,5,1],[1.59,0.045,0.973,0.82,0.92,0.046,5,1],[1.606,0.053,0.973,0.82,0.92,0.055,5,1],[1.622,0.062,0.972,0.83,0.92,0.063,5,1],[1.637,0.07,0.971,0.84,0.91,0.071,5,1],[1.653,0.078,0.971,0.84,0.91,0.08,5,1],[1.669,0.087,0.97,0.85,0.91,0.088,5,1],[1.684,0.095,0.969,0.86,0.9,0.097,5,1],[1.7,0.104,0.968,0.87,0.9,0.105,5,1],[1.716,0.113,0.967,0.88,0.9,0.113,5,1],[1.732,0.122,0.966,0.89,0.89,0.122,5,1],[1.747,0.131,0.965,0.9,0.89,0.13,5,1],[1.763,0.14,0.963,0.92,0.88,0.138,5,1],[1.779,0.149,0.962,0.93,0.87,0.147,5,1],[1.794,0.158,0.96,0.95,0.87,0.155,5,1],[1.81,0.168,0.958,0.96,0.86,0.163,5,1],[1.826,0.178,0.956,0.98,0.85,0.171,5,1],[1.841,0.188,0.954,1,0.84,0.18,5,1],[1.857,0.198,0.952,1.01,0.83,0.188,5,1],[1.873,0.208,0.95,1.03,0.82,0.195,5,1],[1.889,0.218,0.947,1.05,0.81,0.203,5,1],[1.904,0.229,0.945,1.07,0.8,0.211,5,1],[1.92,0.24,0.942,1.09,0.79,0.218,5,1],[1.936,0.251,0.938,1.12,0.78,0.225,5,1],[1.951,0.262,0.935,1.14,0.76,0.232,5,1],[1.967,0.274,0.932,1.16,0.75,0.239,5,1],[1.983,0.285,0.928,1.18,0.73,0.245,5,1],[1.998,0.297,0.924,1.21,0.72,0.251,5,1]]},"nuki":{"P":0.01,"T":0.61,"cad":99,"wpos":0.43,"push":0,"col":0.1,"brake":0.38,"accel":0.54,"vmin":0.84,"vmax":1.38,"zmin":0.87,"zmax":0.9,"azmin":0,"azmax":1.55,"kmin":37,"kmax":50,"ser":[[0,-0.295,0.873,1.2,0.7,-0.261,38,0],[0.017,-0.283,0.878,1.17,0.8,-0.284,38,0],[0.033,-0.272,0.882,1.14,0.94,-0.316,37.9,0],[0.05,-0.26,0.886,1.11,1.07,-0.342,37.8,0],[0.066,-0.249,0.89,1.08,1.16,-0.354,37.5,0],[0.083,-0.239,0.894,1.05,0.61,-0.179,37.1,0],[0.099,-0.228,0.898,1.04,0,0,36.8,0],[0.116,-0.218,0.901,1.04,0,0,36.8,0],[0.132,-0.208,0.903,1.04,0,0,37.1,0],[0.149,-0.197,0.903,1.04,0,0,37.8,0],[0.165,-0.187,0.903,1.04,0,0,38.7,0],[0.182,-0.176,0.902,1.04,0.62,-0.132,39.9,0],[0.198,-0.166,0.901,1.02,1,-0.2,41.2,0],[0.215,-0.156,0.9,1,1.16,-0.219,42.4,0],[0.231,-0.146,0.898,0.98,1.18,-0.209,43.4,0],[0.248,-0.136,0.897,0.96,1.17,-0.194,44.3,0],[0.264,-0.127,0.896,0.94,1.16,-0.178,45.1,0],[0.281,-0.117,0.896,0.92,1.14,-0.163,45.8,0],[0.297,-0.108,0.895,0.91,1.12,-0.148,46.4,0],[0.314,-0.099,0.895,0.9,1.1,-0.133,46.9,0],[0.33,-0.09,0.894,0.88,1.08,-0.119,47.4,0],[0.347,-0.082,0.894,0.87,1.07,-0.106,47.8,0],[0.363,-0.073,0.894,0.86,1.05,-0.093,48.1,0],[0.38,-0.064,0.893,0.85,1.03,-0.081,48.4,0],[0.396,-0.056,0.893,0.85,1.02,-0.07,48.6,0],[0.413,-0.047,0.893,0.84,1.01,-0.058,48.8,0],[0.429,-0.039,0.893,0.83,1,-0.048,49,0],[0.446,-0.031,0.893,0.83,0.99,-0.037,49.2,0],[0.462,-0.022,0.893,0.83,0.98,-0.027,49.3,0],[0.479,-0.014,0.893,0.82,0.97,-0.017,49.4,0],[0.495,-0.006,0.892,0.82,0.96,-0.007,49.5,0],[0.512,0.002,0.892,0.82,0.96,0.003,49.6,0],[0.528,0.011,0.892,0.82,0.95,0.012,49.6,0],[0.545,0.019,0.891,0.83,0.94,0.022,49.7,0],[0.561,0.027,0.891,0.83,0.94,0.031,49.7,0],[0.578,0.035,0.891,0.83,0.93,0.04,49.8,0],[0.594,0.044,0.89,0.84,0.93,0.05,49.8,0],[0.611,0.052,0.89,0.84,0.92,0.059,49.8,0],[0.627,0.061,0.889,0.85,0.92,0.068,49.9,0],[0.644,0.069,0.888,0.86,0.91,0.077,49.9,0],[0.66,0.078,0.887,0.86,0.91,0.087,49.9,0],[0.677,0.086,0.886,0.87,0.9,0.096,49.9,0],[0.693,0.095,0.885,0.88,0.89,0.105,49.9,0],[0.71,0.104,0.884,0.89,0.89,0.114,49.9,0],[0.726,0.113,0.883,0.9,0.88,0.123,50,0],[0.743,0.122,0.882,0.92,0.88,0.132,50,0],[0.759,0.131,0.88,0.93,0.87,0.142,50,0],[0.776,0.141,0.879,0.94,0.86,0.151,50,0],[0.792,0.15,0.877,0.96,0.85,0.159,50,0],[0.809,0.16,0.875,0.98,0.91,0.181,50,0],[0.825,0.17,0.873,1,1.04,0.222,50,0],[0.842,0.18,0.871,1.02,1.21,0.273,49.9,0],[0.858,0.19,0.869,1.05,1.37,0.327,49.7,0],[0.875,0.201,0.868,1.08,1.49,0.376,49.3,0],[0.891,0.212,0.867,1.12,1.55,0.414,48.7,0],[0.908,0.223,0.867,1.16,1.54,0.433,47.9,0],[0.924,0.235,0.867,1.21,1.46,0.432,46.8,0],[0.941,0.247,0.867,1.25,1.31,0.409,45.4,0],[0.957,0.26,0.868,1.29,1.12,0.367,43.8,0],[0.974,0.273,0.869,1.32,0.91,0.312,42.1,0],[0.99,0.287,0.87,1.35,0.71,0.255,40.1,0],[1.013,-0.295,0.873,1.21,0.7,-0.26,38.1,1],[1.03,-0.283,0.877,1.18,0.8,-0.284,38.1,1],[1.046,-0.271,0.881,1.15,0.94,-0.317,38.1,1],[1.063,-0.26,0.885,1.12,1.07,-0.343,37.9,1],[1.079,-0.249,0.89,1.09,1.16,-0.354,37.7,1],[1.096,-0.238,0.894,1.06,0.57,-0.165,37.3,1],[1.112,-0.228,0.898,1.06,0,0,37,1],[1.129,-0.217,0.9,1.06,0,0,37,1],[1.145,-0.207,0.902,1.06,0,0,37.3,1],[1.162,-0.196,0.903,1.06,0,0,37.9,1],[1.178,-0.186,0.903,1.06,0.02,-0.004,38.9,1],[1.195,-0.175,0.902,1.05,0.66,-0.139,40.1,1],[1.211,-0.165,0.901,1.03,1.01,-0.201,41.3,1],[1.228,-0.154,0.9,1.01,1.16,-0.216,42.5,1],[1.244,-0.144,0.898,0.99,1.17,-0.205,43.5,1],[1.261,-0.135,0.897,0.97,1.16,-0.19,44.4,1],[1.277,-0.125,0.896,0.95,1.15,-0.175,45.2,1],[1.294,-0.116,0.896,0.94,1.13,-0.159,45.9,1],[1.31,-0.106,0.895,0.92,1.11,-0.144,46.5,1],[1.327,-0.097,0.895,0.91,1.1,-0.13,47,1],[1.343,-0.088,0.894,0.89,1.08,-0.116,47.4,1],[1.36,-0.079,0.894,0.88,1.06,-0.103,47.8,1],[1.376,-0.071,0.894,0.87,1.04,-0.09,48.1,1],[1.393,-0.062,0.894,0.87,1.03,-0.078,48.4,1],[1.409,-0.053,0.893,0.86,1.02,-0.066,48.6,1],[1.426,-0.045,0.893,0.85,1,-0.055,48.9,1],[1.442,-0.036,0.893,0.85,0.99,-0.044,49,1],[1.459,-0.028,0.893,0.84,0.98,-0.033,49.2,1],[1.475,-0.019,0.893,0.84,0.97,-0.023,49.3,1],[1.492,-0.011,0.893,0.84,0.97,-0.013,49.4,1],[1.508,-0.002,0.892,0.84,0.96,-0.003,49.5,1],[1.525,0.006,0.892,0.84,0.95,0.007,49.6,1],[1.541,0.014,0.892,0.84,0.95,0.017,49.6,1],[1.558,0.023,0.891,0.84,0.94,0.026,49.7,1],[1.574,0.031,0.891,0.85,0.93,0.036,49.7,1],[1.591,0.04,0.89,0.85,0.93,0.045,49.8,1],[1.607,0.048,0.89,0.85,0.92,0.055,49.8,1],[1.624,0.057,0.889,0.86,0.92,0.064,49.9,1],[1.64,0.065,0.888,0.87,0.91,0.073,49.9,1],[1.657,0.074,0.888,0.88,0.91,0.083,49.9,1],[1.673,0.083,0.887,0.88,0.9,0.092,49.9,1],[1.69,0.092,0.886,0.89,0.89,0.101,49.9,1],[1.706,0.101,0.885,0.9,0.89,0.111,49.9,1],[1.723,0.11,0.883,0.91,0.88,0.12,49.9,1],[1.739,0.119,0.882,0.93,0.87,0.129,50,1],[1.756,0.128,0.881,0.94,0.87,0.138,50,1],[1.772,0.138,0.879,0.95,0.86,0.147,50,1],[1.789,0.148,0.877,0.97,0.85,0.156,50,1],[1.805,0.157,0.875,0.99,0.88,0.173,50,1],[1.822,0.167,0.873,1,1,0.21,50,1],[1.838,0.177,0.871,1.03,1.17,0.26,49.9,1],[1.855,0.188,0.87,1.06,1.33,0.315,49.7,1],[1.871,0.199,0.868,1.09,1.47,0.367,49.4,1],[1.888,0.21,0.867,1.13,1.54,0.408,48.9,1],[1.904,0.221,0.867,1.17,1.55,0.433,48.1,1],[1.921,0.233,0.867,1.21,1.48,0.436,47,1],[1.937,0.245,0.867,1.25,1.34,0.417,45.7,1],[1.954,0.258,0.868,1.29,1.16,0.377,44.2,1],[1.97,0.271,0.869,1.33,0.95,0.323,42.4,1],[1.987,0.285,0.87,1.36,0.74,0.265,40.5,1],[2.003,0.298,0.871,1.38,0.56,0.211,38.5,1]]}};
+(() => {
+  const $ = id => document.getElementById(id);
+  const css = () => { const s = getComputedStyle(document.documentElement), g = n => s.getPropertyValue(n).trim();
+    return { surface: g('--surface'), ink: g('--ink'), muted: g('--muted'), line: g('--line'), grid: g('--grid'), c1: g('--c1'), c3: g('--c3'), brake: g('--brake'), accel: g('--accel'), mono: g('--f-mono') }; };
+  let C = css();
+  const N = DATA.vault, T = DATA.nuki;
+  const rows = [
+    ['支える脚の膝', `${N.kmin}〜${N.kmax}°`, `${T.kmin}〜${T.kmax}°`, '伸ばしたまま ／ 着いた直後に抜き、前で伸ばす', true],
+    ['蹴り', `${N.P.toFixed(2)} m/s`, '0', '一歩ごとに速さを保つのに要る量', true],
+    ['一歩で足す仕事', `${(N.wpos + N.push).toFixed(2)} J/kg`, `${(T.wpos + T.push).toFixed(2)} J/kg`, `通常はほぼ蹴り。抜きはほぼ膝（${T.wpos.toFixed(2)}）`, true],
+    ['上下の加速度', `${N.azmin.toFixed(2)}〜${N.azmax.toFixed(2)} g`, `${T.azmin.toFixed(2)}〜${T.azmax.toFixed(2)} g`, '抜きは、着いた直後にほぼ0、次の接地の手前で大きな山', true],
+    ['腰の高さ', `${Math.round(N.zmin * 100)}〜${Math.round(N.zmax * 100)} cm`, `${Math.round(T.zmin * 100)}〜${Math.round(T.zmax * 100)} cm`, '抜きは約5 cm低く、揺れが小さい', false],
+    ['前に進む速さ', `${N.vmin.toFixed(2)}〜${N.vmax.toFixed(2)} m/s`, `${T.vmin.toFixed(2)}〜${T.vmax.toFixed(2)} m/s`, '抜きは、次の接地の手前で速くなる', false],
+    ['ブレーキ（一歩の合計）', `${N.brake.toFixed(2)} m/s`, `${T.brake.toFixed(2)} m/s`, 'ほぼ同じ', false],
+    ['接地で失う速さの仕事', `${N.col.toFixed(2)} J/kg`, `${T.col.toFixed(2)} J/kg`, 'ほぼ同じ', false],
+    ['歩調', `${N.cad} 歩/分`, `${T.cad} 歩/分`, '', false]
+  ];
+  $('tb').innerHTML = rows.map(r => `<tr${r[4] ? ' class="hi"' : ''}><td class="k">${r[0]}</td><td class="n"><span class="v">${r[1]}</span></td><td><span class="v">${r[2]}</span>${r[3] ? `<span class="note">${r[3]}</span>` : ''}</td></tr>`).join('');
+  function fit(cv) {
+    const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const ctx = cv.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0); return { ctx, w: r.width, h: r.height };
+  }
+  const AH = 0.075, S = 0.6;
+  function ik(hip, ank) {
+    const dx = ank[0] - hip[0], dz = ank[1] - hip[1], d = Math.min(Math.hypot(dx, dz), 0.8999), Tl = 0.45;
+    const base = Math.atan2(dz, dx), al = Math.acos(Math.max(-1, Math.min(1, d / (2 * Tl))));
+    const k1 = [hip[0] + Tl * Math.cos(base + al), hip[1] + Tl * Math.sin(base + al)], k2 = [hip[0] + Tl * Math.cos(base - al), hip[1] + Tl * Math.sin(base - al)];
+    return k1[0] > k2[0] ? k1 : k2;
+  }
+  // 4コマ：二歩目（step=1）の u = 1.00, 1.10, 体が足の真上, 1.94
+  function strip(id, D, col) {
+    const { ctx, w, h } = fit($(id)); ctx.clearRect(0, 0, w, h);
+    const one = D.ser.filter(q => q[7] === 1), pick = [one[0], one.reduce((b, q) => Math.abs(q[0] - 1.10) < Math.abs(b[0] - 1.10) ? q : b),
+      one.reduce((b, q) => Math.abs(q[1]) < Math.abs(b[1]) ? q : b), one.reduce((b, q) => Math.abs(q[0] - 1.94) < Math.abs(b[0] - 1.94) ? q : b)];
+    const cw = w / 4, sc = Math.min(h / 1.55, cw / 1.0), gy = h - 10;
+    pick.forEach((q, j) => {
+      const cx = cw * j + cw / 2, X = x => cx + x * sc, Y = z => gy - z * sc;
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(cw * j + 6, gy + .5); ctx.lineTo(cw * (j + 1) - 6, gy + .5); ctx.stroke();
+      const dx = q[1], z = q[2], frac = Math.max(0, Math.min(1, (dx + 0.3) / 0.6)), hip = [dx, z];
+      // 支える足は x=0。振る足：後ろの足（−S）から次の足（+S）へ
+      const sw = -S + 2 * S * (frac * frac * (3 - 2 * frac)), swz = AH + (j === 0 ? 0 : 0.05 * Math.sin(Math.PI * frac));
+      const leg = (ank, a) => { const kn = ik(hip, ank); ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(X(hip[0]), Y(hip[1])); ctx.lineTo(X(kn[0]), Y(kn[1])); ctx.lineTo(X(ank[0]), Y(ank[1])); ctx.stroke();
+        ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(X(ank[0] - 0.05), Y(ank[1] - AH)); ctx.lineTo(X(ank[0] + 0.16), Y(ank[1] - AH)); ctx.stroke(); ctx.globalAlpha = 1; };
+      leg([sw, swz], 0.3); leg([0, AH], 1);
+      ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(X(hip[0]), Y(hip[1])); ctx.lineTo(X(hip[0] + 0.02), Y(hip[1] + 0.48)); ctx.stroke();
+      const L = Math.max(-34, Math.min(34, q[5] * 9.81 * 8));
+      if (Math.abs(L) > 2) { const c = L > 0 ? C.accel : C.brake, x0 = X(hip[0]), y0 = Y(hip[1]); ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + L, y0); ctx.stroke();
+        const s = Math.sign(L); ctx.beginPath(); ctx.moveTo(x0 + L + s * 6, y0); ctx.lineTo(x0 + L - s * 2, y0 - 5); ctx.lineTo(x0 + L - s * 2, y0 + 5); ctx.closePath(); ctx.fill(); }
+      ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(X(hip[0]), Y(hip[1]), 5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = `11px ${C.mono}`; ctx.fillStyle = C.muted; ctx.textAlign = 'center';
+      ctx.fillText(`膝 ${Math.round(q[6])}° ・ ${q[4].toFixed(1)} g`, cx, 13);
+    });
+  }
+  function plot(id, k, lo, hi, fmt) {
+    const { ctx, w, h } = fit($(id)); ctx.clearRect(0, 0, w, h);
+    const L = 36, R = 8, Tp = 6, B = 18, pw = w - L - R, ph = h - Tp - B, X = u => L + u / 2 * pw, Y = v => Tp + (hi - v) / (hi - lo) * ph;
+    ctx.font = `11px ${C.mono}`; ctx.fillStyle = C.muted; ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; ctx.beginPath(); ctx.moveTo(L, Y(v) + .5); ctx.lineTo(L + pw, Y(v) + .5); ctx.stroke(); ctx.fillText(fmt(v), L - 4, Y(v) + 4); }
+    ctx.strokeStyle = C.line; for (const u of [0, 1, 2]) { ctx.beginPath(); ctx.moveTo(X(u) + .5, Tp); ctx.lineTo(X(u) + .5, Tp + ph); ctx.stroke(); }
+    ctx.textAlign = 'center'; ctx.fillText('着地', X(0) + 14, h - 4); ctx.fillText('着地', X(1), h - 4); ctx.fillText('着地', X(2) - 14, h - 4);
+    for (const [D, col, lw] of [[N, C.c1, 1.8], [T, C.c3, 2.6]]) { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+      D.ser.forEach((q, i) => { const y = Y(Math.max(lo, Math.min(hi, q[k]))); i ? ctx.lineTo(X(q[0]), y) : ctx.moveTo(X(q[0]), y); }); ctx.stroke(); }
+  }
+  function draw() {
+    strip('cvN', N, C.c1); strip('cvT', T, C.c3);
+    plot('pV', 3, 0.6, 1.5, v => v.toFixed(1)); plot('pA', 4, 0, 2, v => v.toFixed(1)); plot('pK', 6, 0, 60, v => v.toFixed(0));
+  }
+  const recolor = () => { C = css(); draw(); };
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor); } catch (e) {}
+  new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+</body></html>
